@@ -1,57 +1,34 @@
+@"
 #!/bin/bash
 set -e
 
-echo "=== Iniciando aplicação ==="
+echo "🚀 Iniciando a aplicação..."
 
-# Carregar variáveis de ambiente do arquivo .env se existir
-if [ -f ".env" ]; then
-    echo "📄 Carregando variáveis de ambiente de .env..."
-    export $(grep -v '^#' .env | xargs)
+# Carregar variáveis de ambiente
+if [ -f ".env.production" ]; then
+    echo "📂 Carregando variáveis de .env.production..."
+    export $(grep -v '^#' .env.production | xargs)
 fi
 
-# Configurações padrão
+# Configurações básicas
 : ${HOST:="0.0.0.0"}
 : ${PORT:=8000}
 : ${ENVIRONMENT:="production"}
-: ${DEBUG:="False"}
 
-echo "🌍 Ambiente: $ENVIRONMENT"
-echo "🐞 Modo Debug: $DEBUG"
-
-# Verificar se a porta está disponível
-if ! command -v lsof &> /dev/null || ! lsof -i :"$PORT" > /dev/null; then
-    echo "✅ Porta $PORT está disponível"
-else
-    echo "⚠️  Aviso: A porta $PORT já está em uso"
-    echo "🔍 Tentando encontrar uma porta disponível..."
-    PORT=$(($PORT + 1))
-    echo "🔄 Usando a porta alternativa: $PORT"
-fi
-
-# Verificar se o virtualenv está ativado
-if [ -z "$VIRTUAL_ENV" ]; then
-    echo "ℹ️  Virtualenv não detectado. Verificando se precisa ativar..."
-    if [ -d "venv" ]; then
-        echo "🔌 Ativando virtualenv..."
-        source venv/bin/activate
-    fi
-fi
+echo "⚙️  Configurações:"
+echo "- ENVIRONMENT: ${ENVIRONMENT}"
+echo "- HOST: ${HOST}"
+echo "- PORT: ${PORT}"
 
 # Instalar dependências
-echo "📦 Instalando/Atualizando dependências..."
-python -m pip install --upgrade pip
+echo "📦 Instalando dependências..."
 pip install -r requirements.txt
 
-# Executar migrações do banco de dados
-echo "🔄 Executando migrações do banco de dados..."
+# Executar migrações
+echo "🔄 Executando migrações..."
 alembic upgrade head
 
 # Iniciar a aplicação
-echo "🚀 Iniciando aplicação em $HOST:$PORT..."
-exec gunicorn app.main:app \
-    --workers 4 \
-    --worker-class uvicorn.workers.UvicornWorker \
-    --bind $HOST:$PORT \
-    --timeout 120 \
-    --access-logfile - \
-    --error-logfile -
+echo "🚀 Iniciando o servidor..."
+exec uvicorn app.main:app --host $HOST --port $PORT
+"@ | Out-File -FilePath .\start.sh -Encoding utf8
