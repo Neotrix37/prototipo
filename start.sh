@@ -12,8 +12,8 @@ ls -la
 
 # Instala as dependências
 echo "📦 Instalando dependências..."
-pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
 # Configura a variável de ambiente DATABASE_URL se não estiver definida
 if [ -z "${DATABASE_URL}" ]; then
