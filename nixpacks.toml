@@ -1,0 +1,25 @@
+[phases.setup]
+nixPkgs = ['gcc', 'python39-dev', 'libpq-dev']
+
+[phases.install]
+cmds = [
+  "pip install --upgrade pip",
+  "pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = [
+  "python -m pip install --upgrade pip",
+  "python -m pip install -r requirements.txt"
+]
+
+[start]
+cmd = "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120"
+
+[build.args]
+PYTHON_VERSION = "3.9"
+
+[build.environment]
+PYTHONUNBUFFERED = "1"
+PYTHONPATH = "."
+ENVIRONMENT = "production"
