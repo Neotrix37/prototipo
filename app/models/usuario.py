@@ -44,13 +44,18 @@ class Usuario(Base, CustomBase):
 
     @hybrid_property
     def nivel(self):
-        # Convert integer to NivelUsuario enum
+        # Convert integer to NivelUsuario enum for Python access
         if self._nivel is None:
             return NivelUsuario.BASICO
         try:
             return list(NivelUsuario)[self._nivel - 1]
         except IndexError:
             return NivelUsuario.BASICO
+            
+    @nivel.expression
+    def nivel(cls):
+        # For SQL expressions, just return the underlying column
+        return cls._nivel
 
     @nivel.setter
     def nivel(self, value):

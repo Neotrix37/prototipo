@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Any, Optional, Dict, List, TypeVar, Generic
+from datetime import datetime
 
 # Type variable for generic model types
 T = TypeVar('T')
@@ -103,3 +104,47 @@ class PaginatedResponse(CustomBaseModel, Generic[T]):
             size=size,
             total_pages=total_pages
         )
+
+
+class SyncRequest(CustomBaseModel):
+    """Schema para requisição de sincronização."""
+    records: List[Dict[str, Any]]
+    sync_timestamp: datetime
+    return_updated: bool = False
+
+
+class SyncResponse(CustomBaseModel):
+    """Schema para resposta de sincronização."""
+    table: str
+    total: int
+    skip: int
+    limit: int
+    data: List[Dict[str, Any]]
+    last_sync: datetime
+
+
+class SyncStatus(CustomBaseModel):
+    """Status de sincronização de uma tabela."""
+    table: str
+    last_sync: datetime
+    pending_changes: int
+    total_records: int
+
+
+class SyncSummary(CustomBaseModel):
+    """Resumo da sincronização."""
+    created: int = 0
+    updated: int = 0
+    deleted: int = 0
+    errors: List[Dict[str, str]] = []
+    last_sync: datetime = datetime.utcnow()
+
+
+class TableSyncConfig(CustomBaseModel):
+    """Configuração de sincronização para uma tabela."""
+    table_name: str
+    sync_enabled: bool = True
+    batch_size: int = 100
+    conflict_resolution: str = "server"  # "server", "client", or "merge"
+    fields_to_sync: Optional[List[str]] = None
+    sync_frequency_minutes: int = 5

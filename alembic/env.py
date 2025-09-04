@@ -10,6 +10,16 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from app.core.config import settings
 from app.db.base import Base  # noqa
 
+# Import all models here for autogenerate support
+from app.models.usuario import Usuario
+from app.models.cliente import Cliente
+from app.models.produtos import Produto
+from app.models.categorias import Categoria
+from app.models.fornecedor import Fornecedor
+from app.models.venda import Venda
+from app.models.item_venda import ItemVenda
+from app.models.base import CustomBase
+
 # Configuração do Alembic
 config = context.config
 
