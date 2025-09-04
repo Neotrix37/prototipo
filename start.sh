@@ -1,4 +1,4 @@
-@"
+@'
 #!/bin/bash
 set -e
 
@@ -30,10 +30,5 @@ alembic upgrade head
 
 # Iniciar a aplicação
 echo "🚀 Iniciando o servidor..."
-uvicorn app.main:app --host $HOST --port $PORT --workers 4 --proxy-headers
-
-echo "✅ Aplicação iniciada com sucesso!"
-
-# Manter o container rodando
-while true; do sleep 1; done
-"@ | Out-File -FilePath .\start.sh -Encoding utf8
+exec uvicorn app.main:app --host $HOST --port $PORT
+'@ | Out-File -FilePath .\start.sh -Encoding utf8 -NoNewline
