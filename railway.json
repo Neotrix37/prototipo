@@ -2,19 +2,29 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt && alembic upgrade head"
+    "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt"
   },
   "deploy": {
     "startCommand": "bash start.sh",
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 5
   },
   "checks": {
     "healthcheck": {
       "enabled": true,
-      "timeout": 30,
-      "interval": 60,
-      "startPeriod": 60
+      "endpoint": "/health",
+      "method": "GET",
+      "timeout": 10,
+      "interval": 30,
+      "startPeriod": 10,
+      "maxRetries": 3
+    }
+  },
+  "environments": {
+    "production": {
+      "deploy": {
+        "startCommand": "bash start.sh"
+      }
     }
   }
 }
