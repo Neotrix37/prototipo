@@ -21,18 +21,18 @@ echo "- PORT: ${PORT}"
 
 # Instalar dependencias
 echo "Instalando dependencias..."
-python -m pip install -r requirements.txt
+pip install -r requirements.txt
 
 # Instalar o alembic explicitamente
 echo "Instalando alembic..."
-python -m pip install alembic
+pip install alembic
 
 # Executar migracoes
 echo "Executando migracoes..."
 cd /app
 export PYTHONPATH=/app
-python -m alembic upgrade head
+alembic upgrade head
 
 # Iniciar a aplicacao
 echo "Iniciando o servidor..."
-python -m uvicorn app.main:app --host $HOST --port $PORT --workers 4
+uvicorn app.main:app --host $HOST --port $PORT --workers 4
