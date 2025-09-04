@@ -48,19 +48,16 @@ app = FastAPI(
 )
 
 # Configuração de CORS
-cors_origins = getattr(settings, 'BACKEND_CORS_ORIGINS', []) or []
-if cors_origins:
-    logger.info(f"Configurando CORS para origens: {cors_origins}")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in cors_origins],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Inclui as rotas da API
-app.include_router(api_router, prefix=settings.API_V1_STR)
+# Inclui os roteadores da API
+app.include_router(api_router, prefix="/api/v1")
 
 # Middleware para log de requisições
 @app.middleware("http")
@@ -71,49 +68,56 @@ async def log_requests(request: Request, call_next):
         logger.info(f"Resposta enviada: {response.status_code}")
         return response
     except Exception as e:
-        logger.error(f"Erro ao processar requisição {request.url}: {str(e)}")
+        logger.error(f"Erro ao processar requisição: {str(e)}")
         raise
 
 # Rota de saúde
-@app.get("/health")
+@app.get("/health", tags=["health"])
 async def health_check():
     """
     Rota de verificação de saúde da API
     Retorna o status da API e informações do ambiente
     """
+    import os
+    from datetime import datetime
+    
+    # Tenta conectar ao banco de dados
+    db_status = "healthy"
     try:
-        # Testa a conexão com o banco de dados
         db = next(get_db())
         db.execute("SELECT 1")
-        db_status = "conectado"
+        db.close()
     except Exception as e:
-        logger.error(f"Erro ao conectar ao banco de dados: {e}")
-        db_status = f"erro: {str(e)}"
+        db_status = f"unhealthy: {str(e)}"
     
     return {
-        "status": "online",
-        "environment": settings.ENVIRONMENT,
-        "debug": settings.DEBUG,
+        "status": "ok",
+        "timestamp": datetime.utcnow().isoformat(),
+        "environment": os.getenv("ENVIRONMENT", "development"),
         "database": db_status,
         "version": "1.0.0"
     }
 
 # Rota raiz
-@app.get("/")
+@app.get("/", tags=["root"])
 async def root():
     """
     Rota raiz da API
     Retorna informações básicas sobre a API
     """
+    import os
+    from datetime import datetime
+    
     return {
-        "message": "Bem-vindo ao Sistema de Gestão de Posto",
+        "message": "Bem-vindo à API do Sistema de Gestão de Posto",
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "timestamp": datetime.utcnow().isoformat(),
         "documentation": {
             "swagger": "/docs",
             "redoc": "/redoc",
             "openapi": "/openapi.json"
-        },
-        "environment": settings.ENVIRONMENT,
-        "debug": settings.DEBUG
+        }
     }
 
 # Manipulador de erros global
@@ -122,18 +126,20 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Erro não tratado: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": "Erro interno do servidor"},
+        content={"detail": "Ocorreu um erro interno no servidor"},
     )
 
 # Log ao iniciar a aplicação
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Iniciando a aplicação...")
-    logger.info(f"Ambiente: {settings.ENVIRONMENT}")
-    logger.info(f"Debug: {settings.DEBUG}")
-    logger.info(f"Documentação disponível em /docs")
+    import socket
+    hostname = socket.gethostname()
+    port = os.getenv("PORT", 8000)
+    logger.info(f"Iniciando aplicação em http://{hostname}:{port}")
+    logger.info(f"Ambiente: {os.getenv('ENVIRONMENT', 'development')}")
+    logger.info(f"Documentação disponível em: http://{hostname}:{port}/docs")
 
 # Log ao encerrar a aplicação
 @app.on_event("shutdown")
-def shutdown_event():
-    logger.info("Encerrando a aplicação...")
+async def shutdown_event():
+    logger.info("Encerrando aplicação...")

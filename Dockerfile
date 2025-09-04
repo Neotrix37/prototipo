@@ -29,11 +29,15 @@ COPY --from=builder /opt/venv /opt/venv
 # Define o caminho do ambiente virtual
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copia o código da aplicação
+# Instala as dependências
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copia o restante da aplicação
 COPY . .
 
-# Expõe a porta que o FastAPI está rodando
+# Expõe a porta padrão
 EXPOSE 8000
 
-# Comando para rodar a aplicação
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Define o comando de inicialização
+CMD ["bash", "start.sh"]
