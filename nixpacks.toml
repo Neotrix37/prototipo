@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ['gcc', 'python39-dev', 'libpq-dev']
+nixPkgs = ['gcc', 'python39-dev', 'postgresql']
 
 [phases.install]
 cmds = [
