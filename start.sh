@@ -1,29 +1,52 @@
 #!/bin/bash
 
 # Configurações iniciais
-set -e  # Para o script em caso de erro
+set -e
 export PORT=${PORT:-8000}
+
+# Navega para o diretório correto
+cd /app  # Ajuste este caminho se necessário
 
 # Logs iniciais
 echo "=== Iniciando aplicação ==="
-echo "Porta: $PORT"
-echo "Ambiente: ${ENVIRONMENT:-development}"
+echo "Diretório atual: $(pwd)"
+echo "Conteúdo do diretório:"
+ls -la
 
-# Verifica se o banco de dados está acessível
-if [ -n "$DATABASE_URL" ]; then
-    echo " Conectando ao banco de dados..."
-    # Versão sem depender do psql
-    if python -c "import sqlalchemy; from urllib.parse import urlparse; url = urlparse('$DATABASE_URL'); engine = sqlalchemy.create_engine('postgresql+psycopg2://{}:{}@{}:{}/{}'.format(url.username, url.password, url.hostname, url.port or 5432, url.path[1:])); conn = engine.connect(); conn.close(); print(' Banco de dados conectado!')"; then
-        echo " Banco de dados conectado com sucesso!"
-    else
-        echo "  Aviso: Não foi possível conectar ao banco de dados"
-    fi
+# Verifica se o app/main.py existe
+if [ ! -f "app/main.py" ]; then
+    echo "❌ Erro: app/main.py não encontrado!"
+    echo "Estrutura de diretórios:"
+    find . -type f -name "*.py" | sort
+    exit 1
 fi
 
+# Instala as dependências
+echo "📦 Instalando dependências..."
+pip install -r requirements.txt
+
+# Testa a conexão com o banco de dados
+echo "🔌 Testando conexão com o banco de dados..."
+python -c "
+import os
+import sys
+from sqlalchemy import create_engine
+
+try:
+    db_url = os.getenv('DATABASE_URL')
+    engine = create_engine(db_url, connect_args={"connect_timeout": 5})
+    with engine.connect() as conn:
+        conn.execute('SELECT 1')
+    print('✅ Conexão com o banco de dados bem-sucedida!')
+except Exception as e:
+    print(f'❌ Erro ao conectar ao banco de dados: {e}')
+    sys.exit(1)
+"
+
 # Executa migrações
-echo " Executando migrações..."
+echo "🔄 Executando migrações..."
 alembic upgrade head
 
 # Inicia a aplicação
-echo " Iniciando aplicação FastAPI na porta $PORT..."
-exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug
+echo "🚀 Iniciando aplicação FastAPI..."
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug --timeout-keep-alive 30

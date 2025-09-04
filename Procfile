@@ -1,1 +1,1 @@
-web: sh start.sh
+web: chmod +x start.sh && ./start.sh
