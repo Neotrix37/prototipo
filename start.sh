@@ -49,8 +49,8 @@ echo -e "  ${YELLOW}source venv/Scripts/activate  # Ativa o ambiente virtual (Wi
 echo -e "  ${YELLOW}./start.sh  # Inicia o servidor${NC}\n"
 echo -e "Acesse a documentação da API em: ${YELLOW}http://localhost:8000/api/docs${NC}\n"
 
-# Get the port from the environment variable or use 8000 as default
+# Set default port if not provided
 PORT=${PORT:-8000}
 
-# Start the application
+# Run the FastAPI application
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
