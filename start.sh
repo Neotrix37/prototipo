@@ -34,11 +34,11 @@ echo -e "${GREEN}Instalando dependências...${NC}"
 pip install -r requirements.txt
 
 # Configura o banco de dados
-echo -e "${GREEN}Configurando banco de dados...${NC}
+echo -e "${GREEN}Configurando banco de dados...${NC}"
 python -m app.initial_data
 
 # Cria a primeira migração do Alembic
-echo -e "${GREEN}Criando migração inicial...${NC}
+echo -e "${GREEN}Criando migração inicial...${NC}"
 alembic revision --autogenerate -m "Migração inicial"
 alembic upgrade head
 
@@ -46,5 +46,11 @@ echo -e "\n${GREEN}✅ Configuração concluída com sucesso!${NC}"
 echo -e "\nPara iniciar o servidor de desenvolvimento, execute:\n"
 echo -e "  ${YELLOW}source venv/bin/activate  # Ativa o ambiente virtual (Linux/Mac)${NC}"
 echo -e "  ${YELLOW}source venv/Scripts/activate  # Ativa o ambiente virtual (Windows)${NC}"
-echo -e "  ${YELLOW}uvicorn app.main:app --reload  # Inicia o servidor${NC}\n"
+echo -e "  ${YELLOW}./start.sh  # Inicia o servidor${NC}\n"
 echo -e "Acesse a documentação da API em: ${YELLOW}http://localhost:8000/api/docs${NC}\n"
+
+# Get the port from the environment variable or use 8000 as default
+PORT=${PORT:-8000}
+
+# Start the application
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
