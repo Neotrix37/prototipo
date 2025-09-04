@@ -1,38 +1,29 @@
 #!/bin/bash
 
-# Set default port if not provided
+# Configurações iniciais
+set -e  # Para o script em caso de erro
 export PORT=${PORT:-8000}
 
-# Debug info
-echo "=== Iniciando aplicação na porta $PORT ==="
-echo "URL do banco de dados: $DATABASE_URL"
+# Logs iniciais
+echo "=== Iniciando aplicação ==="
+echo "Porta: $PORT"
+echo "Ambiente: ${ENVIRONMENT:-development}"
 
-# Extrai as credenciais do banco de dados de forma mais simples
-DB_URL=$DATABASE_URL
-
-# Mostra informações de conexão (sem a senha)
-DB_URL_NO_PASS=$(echo $DB_URL | sed -E 's|:([^/]*)@|:****@|')
-echo "Conectando ao banco de dados: $DB_URL_NO_PASS"
-
-# Verifica se o psql está instalado
-if ! command -v psql &> /dev/null; then
-    echo "AVISO: O comando psql não está disponível. Instale o cliente PostgreSQL se precisar de verificação de conexão."
-else
-    # Tenta conectar ao banco de dados
-    echo "Verificando conexão com o banco de dados..."
-    if PGPASSWORD=$(echo $DB_URL | grep -oP ":[^:]+@" | cut -d: -f2 | cut -d@ -f1) psql -h $(echo $DB_URL | grep -oP "@[^:]+:" | cut -d@ -f2 | cut -d: -f1) -U $(echo $DB_URL | grep -oP "//[^:]+" | cut -d/ -f3) -d $(echo $DB_URL | grep -oP "[^/]+$" | cut -d? -f1) -c "SELECT 1" &> /dev/null; then
-        echo "✅ Conexão com o banco de dados bem-sucedida!"
+# Verifica se o banco de dados está acessível
+if [ -n "$DATABASE_URL" ]; then
+    echo " Conectando ao banco de dados..."
+    # Versão sem depender do psql
+    if python -c "import sqlalchemy; from urllib.parse import urlparse; url = urlparse('$DATABASE_URL'); engine = sqlalchemy.create_engine('postgresql+psycopg2://{}:{}@{}:{}/{}'.format(url.username, url.password, url.hostname, url.port or 5432, url.path[1:])); conn = engine.connect(); conn.close(); print(' Banco de dados conectado!')"; then
+        echo " Banco de dados conectado com sucesso!"
     else
-        echo "❌ Falha ao conectar ao banco de dados. Verifique as credenciais e acessos."
-        echo "Certifique-se de que o banco de dados está acessível e as credenciais estão corretas."
-        exit 1
+        echo "  Aviso: Não foi possível conectar ao banco de dados"
     fi
 fi
 
-# Executa as migrações do banco de dados
-echo "Executando migrações do banco de dados..."
+# Executa migrações
+echo " Executando migrações..."
 alembic upgrade head
 
-# Inicia a aplicação FastAPI
-echo "Iniciando aplicação FastAPI..."
-uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug
+# Inicia a aplicação
+echo " Iniciando aplicação FastAPI na porta $PORT..."
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug
