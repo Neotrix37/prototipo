@@ -4,21 +4,11 @@ import sys
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Adiciona o diretório raiz ao path para que possamos importar os módulos do projeto
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# Adiciona o diretório raiz ao path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.core.config import settings
-from app.db.base import Base  # noqa
-
-# Import all models here for autogenerate support
-from app.models.usuario import Usuario
-from app.models.cliente import Cliente
-from app.models.produtos import Produto
-from app.models.categorias import Categoria
-from app.models.fornecedor import Fornecedor
-from app.models.venda import Venda
-from app.models.item_venda import ItemVenda
-from app.models.base import CustomBase
+from app.db.database import Base
 
 # Configuração do Alembic
 config = context.config
@@ -40,6 +30,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -47,18 +38,20 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Executa migrações no modo 'online'."""
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = str(settings.DATABASE_URL)
+    
     connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
-            compare_server_default=True
         )
 
         with context.begin_transaction():
