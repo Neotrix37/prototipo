@@ -1,17 +1,18 @@
 [phases.setup]
-nixPkgs = ['gcc', 'python39', 'postgresql']
+nixPkgs = ['gcc', 'python39', 'python39Packages.pip', 'postgresql']
 
 [phases.install]
 cmds = [
-
+  "python -m ensurepip --upgrade",
+  "python -m pip install --upgrade pip",
+  "pip install -r requirements.txt"
 ]
 
 [phases.build]
 cmds = [
-
+  "python -m pip install --upgrade pip",
+  "pip install -r requirements.txt"
 ]
-
-
 
 [build.args]
 PYTHON_VERSION = "3.9"
@@ -20,3 +21,6 @@ PYTHON_VERSION = "3.9"
 PYTHONUNBUFFERED = "1"
 PYTHONPATH = "."
 ENVIRONMENT = "production"
+
+[start]
+cmd = "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120"
