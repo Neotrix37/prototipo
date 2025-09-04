@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import QueuePool
 import logging
+import os
 
 from ..core.config import settings
 
@@ -17,6 +18,13 @@ DATABASE_URL = settings.DATABASE_URL_INTERNAL if settings.ENVIRONMENT == "produc
 
 # Configuração do engine do SQLAlchemy com pool de conexões
 try:
+    # Adiciona sslmode=disable à URL se não estiver presente
+    if 'sslmode=' not in DATABASE_URL:
+        separator = '&' if '?' in DATABASE_URL else '?'
+        DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=disable"
+    
+    print(f"Conectando ao banco de dados em: {DATABASE_URL.split('@')[-1]}")
+    
     engine = create_engine(
         DATABASE_URL,
         poolclass=QueuePool,
@@ -33,12 +41,13 @@ try:
     
     # Testa a conexão imediatamente com uma query simples
     with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
-    
-    print("✅ Conexão com o banco de dados estabelecida com sucesso!")
+        result = conn.execute(text("SELECT 1"))
+        print(f"✅ Conexão com o banco de dados estabelecida com sucesso! Resultado: {result.scalar()}")
     
 except Exception as e:
     print(f"❌ Erro ao conectar ao banco de dados: {e}")
+    print("Verifique se a variável de ambiente DATABASE_URL está configurada corretamente")
+    print(f"URL usada: {DATABASE_URL}")
     raise
 
 # Sessão do banco de dados
@@ -66,9 +75,6 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
-    except Exception as e:
-        db.rollback()
-        raise
     finally:
         db.close()
 

@@ -1,20 +1,34 @@
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import logging
+import sys
+from sqlalchemy.exc import SQLAlchemyError
+from fastapi.responses import JSONResponse
 
 from .core.config import settings
 from .api.api_v1.api import api_router
-from .db.session import engine, Base
+from .db.session import engine, Base, get_db
 
 # Configuração de logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger(__name__)
 
-# Cria as tabelas no banco de dados apenas em ambiente de desenvolvimento
+# Tenta criar as tabelas no banco de dados apenas em ambiente de desenvolvimento
 if os.getenv("ENVIRONMENT") != "production":
-    logger.info("Criando tabelas no banco de dados...")
-    Base.metadata.create_all(bind=engine)
+    try:
+        logger.info("Tentando criar tabelas no banco de dados...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Tabelas criadas com sucesso ou já existentes.")
+    except Exception as e:
+        logger.error(f"Erro ao criar tabelas: {e}")
+        logger.warning("Continuando sem criar tabelas. Verifique a conexão com o banco de dados.")
 
 # Configuração do FastAPI com documentação
 app = FastAPI(
@@ -52,30 +66,74 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Requisição recebida: {request.method} {request.url}")
-    response = await call_next(request)
-    logger.info(f"Resposta enviada: {response.status_code}")
-    return response
+    try:
+        response = await call_next(request)
+        logger.info(f"Resposta enviada: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.error(f"Erro ao processar requisição {request.url}: {str(e)}")
+        raise
 
 # Rota de saúde
 @app.get("/health")
 async def health_check():
+    """
+    Rota de verificação de saúde da API
+    Retorna o status da API e informações do ambiente
+    """
+    try:
+        # Testa a conexão com o banco de dados
+        db = next(get_db())
+        db.execute("SELECT 1")
+        db_status = "conectado"
+    except Exception as e:
+        logger.error(f"Erro ao conectar ao banco de dados: {e}")
+        db_status = f"erro: {str(e)}"
+    
     return {
-        "status": "ok",
-        "message": "API está funcionando corretamente",
-        "environment": os.getenv("ENVIRONMENT", "development"),
-        "database_connected": True
+        "status": "online",
+        "environment": settings.ENVIRONMENT,
+        "debug": settings.DEBUG,
+        "database": db_status,
+        "version": "1.0.0"
     }
 
 # Rota raiz
 @app.get("/")
 async def root():
+    """
+    Rota raiz da API
+    Retorna informações básicas sobre a API
+    """
     return {
-        "message": "Bem-vindo à API do Sistema de Gestão de Posto",
+        "message": "Bem-vindo ao Sistema de Gestão de Posto",
         "documentation": {
             "swagger": "/docs",
             "redoc": "/redoc",
             "openapi": "/openapi.json"
         },
-        "api_version": "1.0.0",
-        "environment": os.getenv("ENVIRONMENT", "development")
+        "environment": settings.ENVIRONMENT,
+        "debug": settings.DEBUG
     }
+
+# Manipulador de erros global
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Erro não tratado: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno do servidor"},
+    )
+
+# Log ao iniciar a aplicação
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Iniciando a aplicação...")
+    logger.info(f"Ambiente: {settings.ENVIRONMENT}")
+    logger.info(f"Debug: {settings.DEBUG}")
+    logger.info(f"Documentação disponível em /docs")
+
+# Log ao encerrar a aplicação
+@app.on_event("shutdown")
+def shutdown_event():
+    logger.info("Encerrando a aplicação...")

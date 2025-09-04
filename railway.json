@@ -17,19 +17,23 @@
       "enabled": true,
       "endpoint": "/health",
       "method": "GET",
-      "timeout": 10,
-      "interval": 30,
-      "startPeriod": 30,
-      "maxRetries": 5
+      "timeout": 30,
+      "interval": 60,
+      "startPeriod": 90,
+      "maxRetries": 3
     }
   },
   "environments": {
     "production": {
       "variables": {
-        "ENVIRONMENT": "production"
+        "ENVIRONMENT": "production",
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONPATH": ".",
+        "PYTHON_VERSION": "3.11",
+        "PORT": "8000"
       },
       "deploy": {
-        "startCommand": "bash start.sh"
+        "startCommand": "gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120"
       }
     }
   },
