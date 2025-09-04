@@ -5,7 +5,8 @@ nixPkgs = [
     'python311Packages.pip',
     'python311Packages.virtualenv',
     'postgresql',
-    'libpq-dev',
+    'postgresql.lib',
+    'postgresql.dev',
     'python3-dev'
 ]
 
