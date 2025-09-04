@@ -2,7 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt"
+    "buildCommand": "pip install --upgrade pip && pip install -r requirements.txt",
+    "nixpacks": {
+      "providers": ["python"]
+    }
   },
   "deploy": {
     "startCommand": "bash start.sh",
@@ -16,15 +19,21 @@
       "method": "GET",
       "timeout": 10,
       "interval": 30,
-      "startPeriod": 10,
-      "maxRetries": 3
+      "startPeriod": 30,
+      "maxRetries": 5
     }
   },
   "environments": {
     "production": {
+      "variables": {
+        "ENVIRONMENT": "production"
+      },
       "deploy": {
         "startCommand": "bash start.sh"
       }
     }
+  },
+  "scripts": {
+    "postdeploy": "alembic upgrade head"
   }
 }
