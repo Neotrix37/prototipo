@@ -13,8 +13,8 @@ Base = declarative_base()
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
-# Usa a URL interna em produção, caso exista
-DATABASE_URL = settings.DATABASE_URL_INTERNAL if settings.ENVIRONMENT == "production" else settings.DATABASE_URL
+# Usa a URL do banco de dados das configurações
+DATABASE_URL = settings.DATABASE_URL
 
 # Configuração do engine do SQLAlchemy com pool de conexões
 try:
@@ -22,9 +22,9 @@ try:
     if 'sslmode=' not in DATABASE_URL:
         separator = '&' if '?' in DATABASE_URL else '?'
         DATABASE_URL = f"{DATABASE_URL}{separator}sslmode=disable"
-    
+
     print(f"Conectando ao banco de dados em: {DATABASE_URL.split('@')[-1]}")
-    
+
     engine = create_engine(
         DATABASE_URL,
         poolclass=QueuePool,
@@ -38,12 +38,12 @@ try:
             "options": "-c timezone=utc -c statement_timeout=30000"  # 30 segundos de timeout por query
         }
     )
-    
+
     # Testa a conexão imediatamente com uma query simples
     with engine.connect() as conn:
         result = conn.execute(text("SELECT 1"))
         print(f"✅ Conexão com o banco de dados estabelecida com sucesso! Resultado: {result.scalar()}")
-    
+
 except Exception as e:
     print(f"❌ Erro ao conectar ao banco de dados: {e}")
     print("Verifique se a variável de ambiente DATABASE_URL está configurada corretamente")
@@ -61,7 +61,7 @@ SessionLocal = sessionmaker(
 def get_db():
     """
     Fornece uma sessão do banco de dados.
-    
+
     Uso:
     ```python
     db = next(get_db())
