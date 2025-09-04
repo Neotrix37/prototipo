@@ -8,9 +8,6 @@ PORT=${PORT:-8000}
 export PORT
 
 # Instala as dependências (apenas para garantir)
-python -m ensurepip --upgrade
-python -m pip install --upgrade pip
-pip install -r requirements.txt
 
 # Executa as migrações do banco de dados
 echo "🔄 Executando migrações do banco de dados..."
