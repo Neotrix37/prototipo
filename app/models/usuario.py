@@ -23,7 +23,21 @@ class Usuario(Base, CustomBase):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relacionamentos
-    vendas = relationship("Venda", back_populates="usuario")
+    vendas = relationship("Venda", back_populates="usuario", lazy="selectin")
+    compras = relationship("Compra", back_populates="usuario", lazy="selectin")
+    movimentacoes_caixa = relationship("MovimentacaoCaixa", back_populates="usuario", lazy="selectin")
+    minhas_retiradas = relationship(
+        "RetiradaCaixa", 
+        foreign_keys="[RetiradaCaixa.usuario_id]", 
+        back_populates="usuario",
+        lazy="selectin"
+    )
+    aprovacoes_retiradas = relationship(
+        "RetiradaCaixa", 
+        foreign_keys="[RetiradaCaixa.aprovador_id]",
+        lazy="selectin"
+    )
+    fechamentos_caixa = relationship("FechamentoCaixa", back_populates="usuario")
 
     def __repr__(self):
         return f"<Usuario(id={self.id}, usuario='{self.usuario}', nome='{self.nome}')>"

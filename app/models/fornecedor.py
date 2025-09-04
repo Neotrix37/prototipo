@@ -17,6 +17,9 @@ class Fornecedor(Base):
 
     # Relacionamento com produtos
     produtos = relationship("Produto", back_populates="fornecedor")
+    
+    # Relacionamento com compras
+    compras = relationship("Compra", back_populates="fornecedor")
 
     def __repr__(self):
         return f"<Fornecedor(id={self.id}, nome='{self.nome}')>"

@@ -2,20 +2,26 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pip install -r requirements.txt",
-    "installCommand": "pip install -r requirements.txt",
-    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    "buildCommand": "pip install -r requirements.txt && alembic upgrade head"
   },
   "deploy": {
-    "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "startCommand": "uvicorn app.main:app --host=0.0.0.0 --port=${PORT}",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   },
   "checks": {
-    "enabled": true,
-    "timeout": 30,
-    "interval": "30s",
-    "startPeriod": "10s"
+    "healthcheck": {
+      "enabled": true,
+      "timeout": 30,
+      "interval": 60,
+      "startPeriod": 60
+    }
   },
-  "healthcheckPath": "/health"
+  "environments": {
+    "development": {
+      "deploy": {
+        "startCommand": "uvicorn app.main:app --host=0.0.0.0 --port=${PORT} --reload"
+      }
+    }
+  }
 }
