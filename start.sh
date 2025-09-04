@@ -6,6 +6,7 @@ export PORT=${PORT:-8000}
 
 # Logs iniciais
 echo "=== Iniciando aplicação ==="
+echo "Usando a porta: $PORT"
 echo "Diretório atual: $(pwd)"
 echo "Conteúdo do diretório:"
 ls -la
@@ -18,7 +19,7 @@ pip install -r requirements.txt
 # Configura a variável de ambiente DATABASE_URL se não estiver definida
 if [ -z "${DATABASE_URL}" ]; then
     echo "⚠️  DATABASE_URL não definida. Usando valor padrão."
-    export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/posto"
+    export DATABASE_URL="sqlite:///./sql_app.db"
 fi
 
 # Adiciona sslmode=disable à URL se não estiver presente
@@ -65,6 +66,5 @@ echo "🔄 Executando migrações..."
 alembic upgrade head
 
 # Inicia a aplicação
-echo "🚀 Iniciando aplicação FastAPI..."
-echo "PORT value before uvicorn: $PORT"
-exec sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug --timeout-keep-alive 30"
+echo "🚀 Iniciando a aplicação na porta $PORT..."
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --reload
