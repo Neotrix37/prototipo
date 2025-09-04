@@ -1,4 +1,3 @@
-@"
 [build]
 builder = "nixpacks"
 
@@ -20,4 +19,3 @@ retries = 3
 path = "/health"
 success_threshold = 1
 failure_threshold = 3
-"@ | Out-File -FilePath .\railway.toml -Encoding utf8
