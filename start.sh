@@ -66,4 +66,5 @@ alembic upgrade head
 
 # Inicia a aplicação
 echo "🚀 Iniciando aplicação FastAPI..."
-uvicorn app.main:app --host 0.0.0.0 --port $PORT --reload --log-level debug
+echo "PORT value before uvicorn: $PORT"
+exec sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT --log-level debug --timeout-keep-alive 30"

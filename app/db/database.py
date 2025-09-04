@@ -2,7 +2,6 @@
 Configuração centralizada do banco de dados.
 """
 import os
-import ssl
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -21,11 +20,6 @@ if not DATABASE_URL:
     logger.error("❌ A variável de ambiente DATABASE_URL não está configurada")
     raise ValueError("A variável de ambiente DATABASE_URL não está configurada")
 
-# Configura o contexto SSL
-ssl_context = ssl.create_default_context()
-ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
-
 # Configuração do engine do SQLAlchemy
 try:
     # Adiciona sslmode=require à URL se não estiver presente
@@ -35,6 +29,7 @@ try:
     
     logger.info(f"Conectando ao banco de dados em: {DATABASE_URL.split('@')[-1]}")
     
+    # Configura o engine do SQLAlchemy
     engine = create_engine(
         DATABASE_URL,
         pool_pre_ping=True,
@@ -43,10 +38,6 @@ try:
         max_overflow=10,
         connect_args={
             "connect_timeout": 10,
-            "sslmode": "require",
-            "ssl": {
-                "ssl_context": ssl_context
-            },
             "options": "-c timezone=utc -c statement_timeout=30000"
         },
         echo=True  # Habilita logs de SQL para debug
